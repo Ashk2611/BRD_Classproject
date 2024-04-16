@@ -1,0 +1,327 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2761
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fmodern\fcharset0 Courier;\f1\fmodern\fcharset0 Courier-Bold;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgray\c0;\cssrgb\c0\c0\c0;}
+\margl1440\margr1440\vieww21920\viewh14240\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf2 \CocoaLigature0 #!/bin/sh -l\
+\
+#SBATCH --nodes=1                    ##number of requested nodes (a node is a group of CPUs)\
+#SBATCH -n 60		             ##number of requested CPUs\
+#SBATCH --time=04:00:00              ##time requested\
+#SBATCH --job-name MP-pipeline       ##name of job\
+#SBATCH -A microbiome                ##name of the queue you are using. Could be scholar or microbiome if you are on snyder\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1 \
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+
+\f1\b \cf0 \
+\
+#Demux step\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b0 \cf0 \outl0\strokewidth0 \strokec3 qiime tools import \\\
+--type 'SampleData[PairedEndSequencesWithQuality]' \\\
+--input-path <manifest.filename> \\\
+--input-format PairedEndFastqManifestPhred33V2 \\\
+--output-path demux.qza\
+\
+ls \
+\
+qiime demux summarize \\\
+  --i-data demux.qza \\\
+  --o-visualization demux.qzv\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+
+\f1\b \cf0 \outl0\strokewidth0 \
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+
+\f0\b0 \cf0 \
+
+\f1\b #DADA2 step
+\f0\b0 \
+\
+qiime dada2 denoise-paired \\\
+  --i-demultiplexed-seqs demux.qza \\\
+  --p-trim-left-f 5 \\\
+  --p-trim-left-r 5 \\\
+  --p-trunc-len-f 185 \\\
+  --p-trunc-len-r 166 \\\
+  --o-table table.qza \\\
+  --o-representative-sequences rep-seqs.qza \\\
+  --o-denoising-stats denoising-stats.qza\
+\
+\
+qiime feature-table summarize \\\
+  --i-table table.qza \\\
+  --o-visualization table.qzv \\\
+  --m-sample-metadata-file sample-metadata.tsv\
+\
+qiime feature-table tabulate-seqs \\\
+  --i-data rep-seqs.qza \\\
+  --o-visualization rep-seqs.qzv\
+\
+qiime metadata tabulate \\\
+  --m-input-file denoising-stats.qza \\\
+  --o-visualization denoising-stats.qzv\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sl192\slmult1\pardirnatural\partightenfactor0
+\cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 \
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+
+\f1\b \cf3 \expnd0\expndtw0\kerning0
+\CocoaLigature1 \
+#Statistical testing
+\f0\b0 \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sl192\slmult1\pardirnatural\partightenfactor0
+\
+\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf3 \expnd0\expndtw0\kerning0
+\CocoaLigature1 qiime diversity alpha \\\
+\'a0 --i-table table.qza \\\
+\'a0 --p-metric chao1 \\\
+\'a0 --o-alpha-diversity core-metrics-results/chao1_vector.qza\
+\'a0\
+\
+\'a0\
+qiime diversity alpha-group-significance \\\
+\'a0 --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \\\
+\'a0 --m-metadata-file metadata.tsv \\\
+\'a0 --o-visualization core-metrics-results/faith-pd-group-significance.qzv\
+\'a0\
+qiime diversity alpha-group-significance \\\
+\'a0 --i-alpha-diversity core-metrics-results/evenness_vector.qza \\\
+\'a0 --m-metadata-file metadata.tsv \\\
+\'a0 --o-visualization core-metrics-results/evenness-group-significance.qzv\
+\'a0\
+qiime diversity alpha-group-significance \\\
+\'a0 --i-alpha-diversity core-metrics-results/shannon_vector.qza \\\
+\'a0 --m-metadata-file metadata.tsv \\\
+\'a0 --o-visualization core-metrics-results/shannon-group-significance.qzv\
+\'a0\
+qiime diversity alpha-group-significance \\\
+\'a0 --i-alpha-diversity core-metrics-results/observed_features_vector.qza \\\
+\'a0 --m-metadata-file metadata.tsv \\\
+\'a0 --o-visualization core-metrics-results/observed_features-group-significance.qzv\
+\'a0\
+qiime diversity alpha-group-significance \\\
+\'a0 --i-alpha-diversity core-metrics-results/chao1_vector.qza \\\
+\'a0 --m-metadata-file metadata.tsv \\\
+\'a0 --o-visualization core-metrics-results/chao1-group-significance.qzv\
+\'a0\
+\'a0\cf0 \kerning1\expnd0\expndtw0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\sl192\slmult1\pardirnatural\partightenfactor0
+\cf0 \
+qiime diversity beta-group-significance \\\
+  --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --m-metadata-column \cf2 \CocoaLigature0 BRD\cf0 \CocoaLigature1  \\\
+  --o-visualization core-metrics-results/unweighted-unifrac-BRD-significance.qzv \\\
+  --p-pairwise\
+\
+qiime diversity beta-group-significance \\\
+  --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --m-metadata-column \cf2 \CocoaLigature0 BRD\cf0 \CocoaLigature1  \\\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0   \cf3 \expnd0\expndtw0\kerning0
+--p-method 'permdisp' \\\cf0 \kerning1\expnd0\expndtw0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\sl192\slmult1\pardirnatural\partightenfactor0
+\cf0   --o-visualization core-metrics-results/unweighted-unifrac-BRD-significance.qzv \\\
+  --p-pairwise\
+\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 \expnd0\expndtw0\kerning0
+qiime diversity beta-group-significance \\\
+  --i-distance-matrix core-metrics-results/weighted_unifrac_distance_matrix.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --m-metadata-column \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 BRD\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+  --o-visualization core-metrics-results/weighted-unifrac-\kerning1\expnd0\expndtw0 BRD\expnd0\expndtw0\kerning0
+-significance.qzv\\\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\sl192\slmult1\pardirnatural\partightenfactor0
+\cf0 \kerning1\expnd0\expndtw0  --p-pairwise\expnd0\expndtw0\kerning0
+\
+\kerning1\expnd0\expndtw0 \
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 \expnd0\expndtw0\kerning0
+qiime diversity beta-group-significance \\\
+  --i-distance-matrix core-metrics-results/weighted_unifrac_distance_matrix.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --m-metadata-column \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 BRD\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 \kerning1\expnd0\expndtw0   \cf3 \expnd0\expndtw0\kerning0
+--p-method 'permdisp' \\\cf0 \
+  --o-visualization core-metrics-results/weighted-unifrac-\kerning1\expnd0\expndtw0 BRD\expnd0\expndtw0\kerning0
+-significance.qzv\\\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\sl192\slmult1\pardirnatural\partightenfactor0
+\cf0 \kerning1\expnd0\expndtw0  --p-pairwise\
+\
+\
+\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 \expnd0\expndtw0\kerning0
+qiime diversity beta-group-significance \\\
+  --i-distance-matrix core-metrics-results/bray_curtis_distance_matrix.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --m-metadata-column \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 BRD\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+  --o-visualization core-metrics-results/bray-curtis-\kerning1\expnd0\expndtw0 BRD\expnd0\expndtw0\kerning0
+-significance.qzv \\\
+  --p-pairwise\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\sl192\slmult1\pardirnatural\partightenfactor0
+\cf0 \kerning1\expnd0\expndtw0 \
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 \expnd0\expndtw0\kerning0
+qiime diversity beta-group-significance \\\
+  --i-distance-matrix core-metrics-results/bray_curtis_distance_matrix.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --m-metadata-column \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 BRD\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+  --p-method 'permdisp' \\\
+  --o-visualization core-metrics-results/bray-curtis-\kerning1\expnd0\expndtw0 BRD\expnd0\expndtw0\kerning0
+-significance.qzv \\\
+  --p-pairwise\kerning1\expnd0\expndtw0 \
+\expnd0\expndtw0\kerning0
+\
+\
+qiime emperor plot \\\
+  --i-pcoa core-metrics-results/unweighted_unifrac_pcoa_results.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --p-custom-axes \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 BRD\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+  --o-visualization core-metrics-results/unweighted-unifrac-emperor-brd.qzv\
+\
+\
+qiime emperor plot \\\
+  --i-pcoa core-metrics-results/weighted_unifrac_pcoa_results.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --p-custom-axes \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 BRD\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+  --o-visualization core-metrics-results/weighted-unifrac-emperor-brd.qzv\
+\
+\
+qiime emperor plot \\\
+  --i-pcoa core-metrics-results/bray_curtis_pcoa_results.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --p-custom-axes \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 BRD\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+  --o-visualization core-metrics-results/bray-curtis-emperor-brd.qzv\
+\
+\
+\
+\
+qiime diversity alpha-rarefaction \\\
+  --i-table table.qza \\\
+  --i-phylogeny rooted-tree.qza \\\
+  --p-max-depth \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 50557\cf0 \expnd0\expndtw0\kerning0
+\CocoaLigature1  \\\
+  --m-metadata-file metadata.tsv \\\
+  --o-visualization alpha-rarefaction.qzv\
+\
+\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+
+\f1\b \cf3 #Taxonomical assignment \
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+
+\f0\b0 \cf0 \
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 qiime feature-classifier classify-sklearn \\\
+  --i-classifier silva-132-99-515-806-nb-classifier.qza \\\
+  --i-reads rep-seqs.qza \\\
+  --o-classification taxonomy.qza\
+\
+qiime metadata tabulate \\\
+  --m-input-file taxonomy.qza \\\
+  --o-visualization taxonomy.qzv\
+\
+qiime taxa barplot \\\
+  --i-table table.qza \\\
+  --i-taxonomy taxonomy.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --o-visualization taxa-bar-plots.qzv\
+\
+\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 qiime feature-classifier classify-sklearn \\\
+  --i-classifier gg-13-8-99-515-806-nb-classifier.qza \\\
+  --i-reads rep-seqs.qza \\\
+  --o-classification taxonomy.qza\
+\
+qiime metadata tabulate \\\
+  --m-input-file taxonomy.qza \\\
+  --o-visualization taxonomy.qzv\
+\
+\
+qiime taxa barplot \\\
+  --i-table table.qza \\\
+  --i-taxonomy taxonomy.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --o-visualization taxa-bar-plots.qzv\kerning1\expnd0\expndtw0 \
+\
+\
+\
+\
+qiime taxa collapse \\\
+  --i-table table.qza \\\
+  --i-taxonomy taxonomy.qza \\\
+  --p-level 6 \\\
+  --o-collapsed-table table-l6.qza\
+\
+qiime composition ancombc \\\
+  --i-table table-l6.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --p-formula BRD \\\
+  --o-differentials l6-ancombc.qza\
+\
+qiime composition da-barplot \\\
+  --i-data l6-ancombc.qza \\\
+  --p-significance-threshold 0.001 \\\
+  --p-level-delimiter ';' \\\
+  --o-visualization l6-da-barplot-subject.qzv\
+\pard\pardeftab720\sl192\slmult1\partightenfactor0
+\cf0 \expnd0\expndtw0\kerning0
+\
+\
+\
+
+\f1\b # Run ANCOM for overall comparison\
+
+\f0\b0 \
+qiime composition ancombc \\\
+  --i-table comp-table.qza \\\
+  --m-metadata-file metadata.tsv \\\
+  --m-metadata-column BRD \\\
+  --o-visualization ancombc-BRD.qzv\
+\
+\
+# Extract top 10 genera from ANCOM results\
+# Assuming the ANCOM results visualization file is named 'ancom-BRD.qzv'\
+# Replace 'Genus' with the appropriate header for taxa in your ANCOM results\
+top_genera=$(qiime metadata tabulate \\\
+  --m-input-file ancombc-BRD.qzv \\\
+  --source-format Visualization \\\
+  | grep -E 'Genus' \\\
+  | head -n 10 \\\
+  | awk '\{print $2\}')\
+\
+# Re-run ANCOM for selected top 10 genera\
+for genus in $top_genera; do\
+  qiime composition ancombc \\\
+    --i-table comp-table.qza \\\
+    --m-metadata-file metadata.tsv \\\
+    --m-metadata-column BRD \\\
+    --o-visualization ancom-$\{genus\}-BRD.qzv \\\
+    --p-contrast $\{genus\}\
+done\
+\
+\
+\
+\
+\
+}
